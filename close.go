@@ -32,7 +32,7 @@ func (p *Pool[_, _]) closureRequestListener() {
 waiting:
 	// Block until a request comes in
 	forced := <-p.closureRequest
-	p.log.Debug("Got a request to close", "forced", forced)
+	p.log.Debug("Got a request to close", "forced", forced, "parent_requested", p.connectorRequestedClosure)
 	// Refuse to close if it had already been done.
 	if p.IsClosed() {
 		p.log.Warn("Pool is already closed")
