@@ -33,21 +33,28 @@ func (p *Pool[_, _]) Close(force ...bool) {
 		return
 	}
 
-	// Send the closed signal to any connected pools. We need to issue a closure
-	// request to the dependent (child) pools before locking ourselves (optionally)
-	// and waiting for those dependent (child) pools to leave.
-	p.closureSignalForChildren <- signal
-	close(p.closureSignalForChildren)
+	// This is a flag that will force closure (override waiting).
+	shouldForceNonetheless := false
 
 	// Wait until the child pools are closed.
 	if p.anotherPoolIsSendingJobsHere() {
+		// Send the closed signal to any connected pools. We need to issue a closure
+		// request to the dependent (child) pools before locking ourselves (optionally)
+		// and waiting for those dependent (child) pools to leave.
+		p.closureSignalForChildren <- signal
+
 		p.log.Info("Waiting for child pools to close...")
 		<-p.childPoolLeft
 		p.log.Info("Child left, resuming closure...")
+		close(p.closureSignalForChildren)
+
+		shouldForceNonetheless = true
+		drain(p.inputs)
+		drain(p.outputs)
 	}
 
 	// If force flag has been passed, wait until no jobs are waiting.
-	if len(force) <= 0 || !force[0] {
+	if (len(force) <= 0 || !force[0]) && !shouldForceNonetheless {
 		p.Wait()
 	}
 

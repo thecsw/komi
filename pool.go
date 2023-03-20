@@ -23,7 +23,7 @@ func NewPool[I, O any](optionWork poolWork[I, O], options ...PoolSettingsFunc) *
 		},
 		jobsWaiting:              &atomic.Int64{},
 		jobsCompleted:            &atomic.Int64{},
-		closureSignalForChildren: make(chan Signal, 1),
+		closureSignalForChildren: make(chan Signal),
 		closedSignal:             make(chan Signal, 1),
 		log: log.New(
 			log.WithTimestamp(),
