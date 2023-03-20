@@ -1,6 +1,8 @@
 package komi
 
-import "sync"
+import (
+	"sync"
+)
 
 // PoolConnector is an interface that should be used by other pools
 // when connecting to them and by users to send pools around as well.
@@ -72,6 +74,7 @@ func (p *Pool[I, O]) Connect(parent PoolConnector[O]) {
 				// If the pool produced a new output, grab it and send it
 				// as a new job to the connected pool.
 				parent.Submit(result)
+				continue
 				// ---
 			case <-p.connectorsStopSignal:
 				// If the stop connector signal received, mark this connector
@@ -90,8 +93,8 @@ func (p *Pool[I, O]) Connect(parent PoolConnector[O]) {
 				p.connectorRequestedClosure = true
 
 				// Request the closure of this pool.
-				p.Close()
-				return
+				p.closureRequest <- false
+				continue
 			}
 		}
 	}(p)

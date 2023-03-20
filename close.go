@@ -23,17 +23,27 @@ func (p Pool[_, _]) anotherPoolIsSendingJobsHere() bool {
 // can request a pool closure if and only if it is not connected to another
 // pool. In that case, the parent pool will have to issue the closure request.
 func (p *Pool[_, _]) Close(force ...bool) {
+	p.closureInternalWait.Add(1)
+	p.closureRequest <- (len(force) > 0 && force[0])
+	p.closureInternalWait.Wait()
+}
+
+func (p *Pool[_, _]) closureRequestListener() {
+waiting:
+	// Block until a request comes in
+	forced := <-p.closureRequest
+	p.log.Debug("Got a request to close", "forced", forced)
 	// Refuse to close if it had already been done.
 	if p.IsClosed() {
 		p.log.Warn("Pool is already closed")
-		return
+		p.closureInternalWait.Done()
+		goto waiting
 	}
 	if p.IsConnected() && !p.connectorRequestedClosure {
 		p.log.Warn("Only the parent can close this pool", "parent", p.parent.Name())
-		return
+		p.closureInternalWait.Done()
+		goto waiting
 	}
-
-	forced := len(force) > 0 && force[0]
 
 	if p.childsWait != nil && !forced {
 		p.log.Debug("Waiting for the child's Wait")
@@ -67,6 +77,15 @@ func (p *Pool[_, _]) Close(force ...bool) {
 	// Start sending a signal for all laborers to quit.
 	p.stopLaborers()
 
+	// If we the pool had a connector enabled, close it down too.
+	if p.IsConnected() {
+		p.log.Debug("Sent a shutdown signal to connectors...")
+		p.connectorsStopSignal <- signal
+		p.connectorsActive.Wait()
+		close(p.connectorsStopSignal)
+		p.log.Debug("Connectors quit")
+	}
+
 	// Close the inputs channel so no new work is processed.
 	drain(p.inputs)
 	close(p.inputs)
@@ -83,15 +102,6 @@ func (p *Pool[_, _]) Close(force ...bool) {
 		close(p.errors)
 	}
 
-	// If we the pool had a connector enabled, close it down too.
-	if p.IsConnected() && !p.connectorRequestedClosure {
-		p.log.Debug("Sent a shutdown signal to connectors...")
-		p.connectorsStopSignal <- signal
-		p.connectorsActive.Wait()
-		close(p.connectorsStopSignal)
-		p.log.Debug("Connectors quit")
-	}
-
 	// Mark the flag that the pool is closed.
 	p.closed = true
 
@@ -100,4 +110,8 @@ func (p *Pool[_, _]) Close(force ...bool) {
 
 	p.closedSignal <- signal
 	close(p.closedSignal)
+
+	if !p.connectorRequestedClosure {
+		p.closureInternalWait.Done()
+	}
 }

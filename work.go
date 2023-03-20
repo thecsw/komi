@@ -29,48 +29,53 @@ func (p *Pool[_, _]) producesErrors() bool {
 
 // performWorkSimple will perform the simple work.
 func (p *Pool[I, _]) performWorkSimple(job I) {
-	defer p.performedWork()
+	defer p.performedWork(true)
 	p.workSimple(job)
 }
 
 // performWorkSimpleWithErrors will perform simple work with errors.
 func (p *Pool[I, _]) performWorkSimpleWithErrors(job I) {
-	defer p.performedWork()
 	err := p.workSimpleWithErrors(job)
 	if err != nil {
 		p.errors <- PoolError[I]{
 			Job:   job,
 			Error: err,
 		}
+		p.performedWork(false)
 		return
 	}
+	p.performedWork(true)
 }
 
 // performWorkRegular will perform regular work.
 func (p *Pool[I, O]) performWorkRegular(job I) {
-	defer p.performedWork()
+	defer p.performedWork(true)
 	p.outputs <- p.workRegular(job)
 }
 
 // performWorkWithErrors will perform regular work with errors.
 func (p *Pool[I, O]) performWorkWithErrors(job I) {
-	defer p.performedWork()
 	res, err := p.workRegularWithErrors(job)
 	if err != nil {
 		p.errors <- PoolError[I]{
 			Job:   job,
 			Error: err,
 		}
+		p.performedWork(false)
 		return
 	}
 	p.outputs <- res
+	p.performedWork(true)
 }
 
 // performedWork will reduce the number of waiting jobs and increase
 // the number of completed jobs.
-func (p *Pool[_, _]) performedWork() {
+func (p *Pool[_, _]) performedWork(success bool) {
 	p.jobsWaiting.Add(-1)
 	p.jobsCompleted.Add(1)
+	if success {
+		p.jobsSucceeded.Add(1)
+	}
 
 	// If we are concurrently waiting for jobs, send a signal
 	// if the number of waiting jobs is 0.

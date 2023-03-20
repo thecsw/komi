@@ -2,6 +2,7 @@ package komi
 
 import (
 	"os"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,8 +20,11 @@ func NewWithSettings[I, O any](optionWork poolWork[I, O], settings *Settings) *P
 		settings:            settings,
 		jobsWaiting:         &atomic.Int64{},
 		jobsCompleted:       &atomic.Int64{},
+		jobsSucceeded:       &atomic.Int64{},
 		tellChildrenToClose: make(chan Signal),
 		closedSignal:        make(chan Signal, 1),
+		closureRequest:      make(chan bool),
+		closureInternalWait: &sync.WaitGroup{},
 		log: log.NewWithOptions(os.Stderr, log.Options{
 			TimeFormat:      time.DateTime,
 			ReportTimestamp: true,
@@ -34,7 +38,7 @@ func NewWithSettings[I, O any](optionWork poolWork[I, O], settings *Settings) *P
 	optionWork(p)
 
 	// If work received and set is a nil function, then immediately panic.
-	if !p.hasWork() {
+	if !p.hasWork() || p.workPerformer == nil {
 		panic("pool didn't receive any work")
 	}
 
@@ -71,6 +75,8 @@ func NewWithSettings[I, O any](optionWork poolWork[I, O], settings *Settings) *P
 
 	// Fire off all the laborers.
 	p.startLaborers()
+
+	go p.closureRequestListener()
 
 	return p
 }

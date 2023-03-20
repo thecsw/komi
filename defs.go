@@ -89,8 +89,11 @@ type Pool[I, O any] struct {
 	jobsWaiting *atomic.Int64
 
 	// jobsCompleted is an atomic counter used to count how many jobs have performed work
-	// (it doesn't if the errors are enabled and return a non-nil result).
+	// (it doesn't if the errors are enabled and return result).
 	jobsCompleted *atomic.Int64
+
+	// jobsSucceeded tracks the number of completed jobs with non-nil results.
+	jobsSucceeded *atomic.Int64
 
 	// laborersStopSignal is a channel used by the pool to tell all laborers to quit,
 	// consumed by laborers.
@@ -129,6 +132,13 @@ type Pool[I, O any] struct {
 	// noJobsCurrentlyWaitingSignal fires when `Wait` is active and
 	// number of waiting jobs is 0.
 	noJobsCurrentlyWaitingSignal chan Signal
+
+	// closureRequest will have a signal go through when someone wants to close the pool,
+	// true value passed means it was forced
+	closureRequest chan bool
+
+	// closureInternalWait will block .Close() until closure handler leaves.
+	closureInternalWait *sync.WaitGroup
 }
 
 // PoolError is produced by the pool when a work performed by the pool fails

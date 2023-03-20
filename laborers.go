@@ -62,6 +62,7 @@ func (p *Pool[I, O]) startLaborers() {
 				case job := <-p.inputs:
 					// Run the work performer on each new job.
 					p.workPerformer(job)
+					continue
 				case <-p.laborersStopSignal:
 					// When stop signal received, mark the laborer as inactive
 					// and kill the current scope.
@@ -116,4 +117,9 @@ func (p Pool[_, _]) JobsCompleted() int64 {
 // by the pool.
 func (p Pool[_, _]) JobsWaiting() int64 {
 	return p.jobsWaiting.Load()
+}
+
+// JobsSucceeded will return the number of jobs succeeded (non-nil errors).
+func (p Pool[_, _]) JobsSucceeded() int64 {
+	return p.jobsSucceeded.Load()
 }
