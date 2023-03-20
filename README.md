@@ -1,4 +1,4 @@
-# Komi - golang's subarashi pooling library
+# Komi - subarashi go pooling 🍡
 
 ![komi](komi.jpg)
 
