@@ -4,88 +4,64 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-// poolSettings is an internal struct that tunes the pool as requested.
-type poolSettings struct {
-	// numLaborers is the number of laborers (work performers) that should
+// Settings is an internal struct that tunes the pool as requested.
+type Settings struct {
+	// Laborers is the number of laborers (work performers) that should
 	// run in parallel.
-	numLaborers int
+	Laborers int
 
-	// size sets the size of the pool, or how many inputs and outputs (each
-	// has separate size) can be set by the pool. If size is reached, submissions
+	// Size sets the Size of the pool, or how many inputs and outputs (each
+	// has separate Size) can be set by the pool. If Size is reached, submissions
 	// or work results will be blocked.
-	size int
+	Size int
 
-	// sizeOverride is true if the user chose to set the size manuall, instead of
+	// sizeOverride is true if the user chose to set the size manually, instead of
 	// letting the pool set it automatically.
 	sizeOverride bool
 
-	// ratioSizeToNumLaborers is the ratio that is used (unless size is set manually)
+	// Ratio is the ratio that is used (unless size is set manually)
 	// for setting the size to the number of laborers.
-	ratioSizeToNumLaborers int
+	Ratio int
 
-	// debug will set the logger to show all debug logs too.
-	debug bool
+	// Debug will set the logger to show all Debug logs too.
+	Debug bool
 
-	// name is the name of the pool.
-	name string
+	// Name is the Name of the pool.
+	Name string
 
-	// logLevel defaults to warn, can be set by the user.
-	logLevel log.Level
+	// LogLevel defaults to warn, can be set by the user.
+	LogLevel log.Level
 }
 
-// PoolSettingsFunc is the function type for binding custom settings.
-type PoolSettingsFunc func(*poolSettings)
-
-// WithLaborers sets the number of laborers to activate in the pool,
-// will default to number of logical CPU cores if less or equal to 0.
-func WithLaborers(num int) PoolSettingsFunc {
-	return func(ps *poolSettings) {
-		if num <= 0 {
-			return
-		}
-		ps.numLaborers = num
+// verifySettings will make sure the settings are proper and
+// set sensible defaults if user hasn't set them manually.
+func verifySettings(settings *Settings) {
+	// If laborers have not been set, default to number of CPUs.
+	if settings.Laborers <= 0 {
+		settings.Laborers = defaultNumLaborers
 	}
-}
-
-// WithSize sets the size of the pool, of how many jobs can wait at any
-// moment's time, defaults to `ratio * number of laborers`
-func WithSize(size int) PoolSettingsFunc {
-	return func(ps *poolSettings) {
-		if size <= 0 {
-			return
-		}
-		ps.size = size
-		ps.sizeOverride = true
+	// If the user has manually set the size, that shall be used.
+	if settings.Size > 0 {
+		settings.sizeOverride = true
 	}
-}
-
-// WithSizeToLaborersRatio sets the `ratio` in `size = ratio * laborers` equation,
-// unless `size` has been manually set with `WithSize`.
-func WithSizeToLaborersRatio(ratio int) PoolSettingsFunc {
-	return func(ps *poolSettings) {
-		if ratio <= 0 {
-			return
-		}
-		ps.ratioSizeToNumLaborers = ratio
+	// If ratio is default, set the default size ratio.
+	if settings.Ratio <= 0 {
+		settings.Ratio = defaultRatio
 	}
-}
-
-// WithDebug will set the log level to `DebugLevel`.
-func WithDebug() PoolSettingsFunc {
-	return WithLogLevel(log.DebugLevel)
-}
-
-// WithName sets the name of the pool, which is shown in logs.
-func WithName(name string) PoolSettingsFunc {
-	return func(ps *poolSettings) {
-		ps.name = name
+	// If size has not been manually set, default to `size = ratio * laborers`
+	if !settings.sizeOverride {
+		settings.Size = settings.Ratio * settings.Laborers
 	}
-}
-
-// WithLogLevel sets the logging level of the pool's internals,
-// defaults to `WarnLevel`.
-func WithLogLevel(level log.Level) PoolSettingsFunc {
-	return func(ps *poolSettings) {
-		ps.logLevel = level
+	// If log level is default, set it to at least to warn level.
+	if settings.LogLevel <= 0 {
+		settings.LogLevel = log.WarnLevel
+	}
+	// If debug is set, set the log level to debug.
+	if settings.Debug {
+		settings.LogLevel = log.DebugLevel
+	}
+	// If name is empty, set it to default.
+	if len(settings.Name) < 1 {
+		settings.Name = defaultName
 	}
 }

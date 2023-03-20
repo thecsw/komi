@@ -15,9 +15,9 @@ be it a database operation, a syscall, an IO operation, etc. (possibilities are 
 Setting up a pool and sending jobs is as trivial as
 
 ```go
-pool := komi.NewPool(komi.WorkSimple(foo))
+pool := komi.New(komi.WorkSimple(foo))
 defer pool.Close()
-/// other code...
+// other code...
 pool.Submit(v) // will block if pool is full
 ```
 
@@ -27,7 +27,7 @@ Notice that `pool.Close()` will gracefully free all the resources and channels o
 But what if you want to collect outputs of work performed on `v` with `foo(v) w`?
 
 ```go
-pool := komi.NewPool(komi.Work(foo))
+pool := komi.New(komi.Work(foo))
 defer pool.Close()
 // collect outputs with pool.Outputs() channel
 go func() {
@@ -42,7 +42,7 @@ pool.Submit(v) // will block if pool is full
 But what if you want to collect errors as well? Consider `foo(v) error `
 
 ```go
-pool := komi.NewPool(komi.WorkSimpleWithErrors(foo))
+pool := komi.New(komi.WorkSimpleWithErrors(foo))
 defer pool.Close()
 // collect errors with with pool.Errors() channel...
 // other code...
@@ -52,9 +52,10 @@ pool.Submit(v) // will block if pool is full
 Or with `foo(v) (w, error)`!
 
 ```go
-pool := komi.NewPool(komi.WorkWithErrors(foo))
+pool := komi.New(komi.WorkWithErrors(foo))
 defer pool.Close()
-// collect outputs with pool.Outputs() channel and errors with pool.Errors() channel...
+// collect outputs with pool.Outputs() channel
+// collect errors with pool.Errors() channel...
 // other code...
 pool.Submit(v) // will block if pool is full
 ```
@@ -76,11 +77,17 @@ and the other counts the number of words, `countWords(contents string) int`.
 Two pools can be created,
 
 ```go
-opener := komi.NewPool(komi.WorkWithErrors(openFile), 
-    komi.WithLaborers(1), komi.WithName("Opener 📂"))
-    
-counter := komi.NewPool(komi.Work(countWords), komi.WithLaborers(10), 
-    komi.WithSize(20), komi.WithName("Counter 📚"))
+opener := komi.NewWithSettings(komi.WorkWithErrors(openFile), &komi.Settings{
+	Name:     "Opener 📂 ",
+	Laborers: 1,
+	Size:     4,
+})
+
+counter := komi.NewPool(komi.Work(countWords), &komi.Settings{
+	Name:     "Opener 📚 ",
+	Laborers: 10,
+	Size:     20,
+})
 ```
 
 We can wire the outputs of `opener` to be automatically fed into `counter` with
@@ -137,14 +144,14 @@ Some other quality of life operations are also provided,
 
 ## Settings
 
-You can tune the performance and behavior of the pool with some provided functions, such as,
+You can tune the performance and behavior of the pool with `komi.NewWithSetttings` by providing `*komi.Settings`,
 
-- `WithLaborers(num int)` sets the number of pool's laborers.
-- `WithSize(size int)` sets the size of the pool (how many jobs can wait until `pool.Submit` is blocked).
-- `WithSizeToLaborersRatio(ratio int)` sets the `ratio` in `size = ratio * number of laborers` equation.
-- `WithLogLevel(level log.Level)` sets the pool's logging level to `level`.
-- `WithDebug()` sets the pool's logging level to `DebugLevel`.
-- `WithName(name string)` sets the pool's name as shown in logs.
+- `Laborers` sets the number of pool's laborers.
+- `Size` sets the size of the pool (how many jobs can wait until `pool.Submit` is blocked).
+- `Ratio` sets the `ratio` in `size = ratio * number of laborers` equation (only if size has not been manually set).
+- `LogLevel` sets the pool's logging level to `level`.
+- `Debug` sets the pool's logging level to `DebugLevel`.
+- `Name` sets the pool's name as shown in logs.
 
 ## Stability
 

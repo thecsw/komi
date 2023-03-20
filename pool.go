@@ -1,33 +1,31 @@
 package komi
 
 import (
+	"os"
 	"sync/atomic"
 	"time"
 
 	"github.com/charmbracelet/log"
 )
 
-// NewPool will allocate a new pool with a required work function and optional settings
-// with sensible defaults.
-func NewPool[I, O any](optionWork poolWork[I, O], options ...PoolSettingsFunc) *Pool[I, O] {
-	// Create the new pool entity with some sensible defaults.
+// New creates a new pool with sensible defaults.
+func New[I, O any](optionWork poolWork[I, O]) *Pool[I, O] {
+	return NewWithSettings(optionWork, nil)
+}
+
+// NewWithSettings creates a new pool with custom pool tunings enabled.
+func NewWithSettings[I, O any](optionWork poolWork[I, O], settings *Settings) *Pool[I, O] {
 	p := &Pool[I, O]{
-		settings: &poolSettings{
-			numLaborers:            defaultNumLaborers,
-			size:                   defaultNumLaborers,
-			ratioSizeToNumLaborers: defaultRatio,
-			name:                   defaultName,
-			// Show errors by default from logging.
-			logLevel: log.WarnLevel,
-		},
+		settings:            settings,
 		jobsWaiting:         &atomic.Int64{},
 		jobsCompleted:       &atomic.Int64{},
 		tellChildrenToClose: make(chan Signal),
 		closedSignal:        make(chan Signal, 1),
-		log: log.New(
-			log.WithTimestamp(),
-			log.WithTimeFormat(time.DateTime),
-		),
+		log: log.NewWithOptions(os.Stderr, log.Options{
+			TimeFormat:      time.DateTime,
+			ReportTimestamp: true,
+			ReportCaller:    false,
+		}),
 		currentlyWaitingForJobs:      &atomic.Bool{},
 		noJobsCurrentlyWaitingSignal: make(chan Signal),
 	}
@@ -40,38 +38,49 @@ func NewPool[I, O any](optionWork poolWork[I, O], options ...PoolSettingsFunc) *
 		panic("pool didn't receive any work")
 	}
 
-	// Run all of the optional settings' functions and set user's settings.
-	for _, option := range options {
-		option(p.settings)
+	// Verify that all settings have been correctly set after work has been confirmed.
+	if p.settings == nil {
+		p.settings = &Settings{}
 	}
+	verifySettings(p.settings)
 
 	// Set the logging levels and options.
-	p.log.SetLevel(p.settings.logLevel)
-	p.log.SetPrefix(p.settings.name)
+	p.log.SetLevel(p.settings.LogLevel)
+	p.log.SetPrefix(p.settings.Name)
 
 	// If usar has not provided a manual size setting, then set `size = laborers * ratio`.
 	if !p.settings.sizeOverride {
-		p.settings.size = p.settings.numLaborers * p.settings.ratioSizeToNumLaborers
+		p.settings.Size = p.settings.Laborers * p.settings.Ratio
 	}
 
 	// A nice debug.
 	p.log.Debug("Pool settings initialized")
 
 	// Allocate the channel with proper size.
-	p.inputs = make(chan I, p.settings.size)
+	p.inputs = make(chan I, p.settings.Size)
 
 	// If the function given produces outputs, also allocate the outputs channel.
 	if p.producesOutputs() {
-		p.outputs = make(chan O, p.settings.size)
+		p.outputs = make(chan O, p.settings.Size)
 	}
 
 	// If the function given produces errors, also allocated the errors channel.
 	if p.producesErrors() {
-		p.errors = make(chan PoolError[I], p.settings.size)
+		p.errors = make(chan PoolError[I], p.settings.Size)
 	}
 
 	// Fire off all the laborers.
 	p.startLaborers()
 
 	return p
+}
+
+// SetLevel the logging level of the pool.
+func (p *Pool[_, _]) SetLevel(level log.Level) {
+	p.log.SetLevel(level)
+}
+
+// Debug enables the debug logging in the pool.
+func (p *Pool[_, _]) Debug() {
+	p.log.SetLevel(log.DebugLevel)
 }

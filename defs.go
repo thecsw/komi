@@ -32,10 +32,10 @@ var (
 // errors (optional).
 type Pool[I, O any] struct {
 	// settings is the typeless configuration of the pool.
-	settings *poolSettings
+	settings *Settings
 
 	// log is the pool's logger to be used.
-	log log.Logger
+	log *log.Logger
 
 	// workSimple could be set by the user if the kind of work
 	// they want the pool to perform has no outputs or errors.

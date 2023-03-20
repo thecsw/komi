@@ -55,7 +55,7 @@ func (p *Pool[I, O]) startLaborers() {
 	p.laborersStopSignal = make(chan Signal)
 
 	// Create the number given by the settings.
-	for i := 0; i < p.settings.numLaborers; i++ {
+	for i := 0; i < p.settings.Laborers; i++ {
 		go func(p *Pool[I, O]) {
 			for {
 				select {
@@ -74,14 +74,14 @@ func (p *Pool[I, O]) startLaborers() {
 		// Record the laborer as an active laborer.
 		p.laborersActive.Add(1)
 	}
-	p.log.Debug("Started laborers", "count", p.settings.numLaborers)
+	p.log.Debug("Started laborers", "count", p.settings.Laborers)
 }
 
 // stopLaborers will send blocking closure signals to all laborers and wait (blocking)
 // until they all gracefully leave.
 func (p *Pool[_, _]) stopLaborers() {
-	p.log.Debug("Sending signals to kill laborers...", "count", p.settings.numLaborers)
-	for i := 0; i < p.settings.numLaborers; i++ {
+	p.log.Debug("Sending signals to kill laborers...", "count", p.settings.Laborers)
+	for i := 0; i < p.settings.Laborers; i++ {
 		p.laborersStopSignal <- signal
 	}
 
@@ -92,7 +92,7 @@ func (p *Pool[_, _]) stopLaborers() {
 	close(p.laborersStopSignal)
 
 	// Log the laborers closure.
-	p.log.Debug("All laborers quit", "count", p.settings.numLaborers)
+	p.log.Debug("All laborers quit", "count", p.settings.Laborers)
 }
 
 // Wait wil block until the pool has no waiting jobs, see `With...` options.

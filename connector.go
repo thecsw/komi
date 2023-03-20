@@ -117,7 +117,7 @@ func (p *Pool[_, _]) waitBeforeClosure(waitForThis <-chan Signal) {
 
 // Name returns the name of the pool.
 func (p *Pool[_, _]) Name() string {
-	return p.settings.name
+	return p.settings.Name
 }
 
 // setChildsWait sets the child's wait function.
