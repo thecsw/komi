@@ -13,7 +13,7 @@ func TestPoolCreationClosing(t *testing.T) {
 	assert.NotNil(t, simplePool, "simple pool")
 	simplePool.Close()
 	assert.Equal(t, true, simplePool.closed, "closed flag")
-	assert.NotEmpty(t, simplePool.closureSignalForChildren, "closed signal channel")
+	assert.NotEmpty(t, simplePool.closedSignal, "closed signal channel")
 
 	simplePoolWithErrors := NewPool(WorkSimpleWithErrors(squareSimpleWithErrors),
 		WithDebug(), WithName("Simple Pool With Errors"))

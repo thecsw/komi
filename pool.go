@@ -21,10 +21,10 @@ func NewPool[I, O any](optionWork poolWork[I, O], options ...PoolSettingsFunc) *
 			// Show errors by default from logging.
 			logLevel: log.WarnLevel,
 		},
-		jobsWaiting:              &atomic.Int64{},
-		jobsCompleted:            &atomic.Int64{},
-		closureSignalForChildren: make(chan Signal),
-		closedSignal:             make(chan Signal, 1),
+		jobsWaiting:         &atomic.Int64{},
+		jobsCompleted:       &atomic.Int64{},
+		tellChildrenToClose: make(chan Signal),
+		closedSignal:        make(chan Signal, 1),
 		log: log.New(
 			log.WithTimestamp(),
 			log.WithTimeFormat(time.DateTime),

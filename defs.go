@@ -57,10 +57,10 @@ type Pool[I, O any] struct {
 	// whatever work that the user gave for the pool.
 	workPerformer func(I)
 
-	// closureSignalForChildren is a channel where this pool will send a
+	// tellChildrenToClose is a channel where this pool will send a
 	// signal to tell all the dependent (child) pools (the ones that send
 	// their outputs to here) to start shutting down.
-	closureSignalForChildren chan Signal
+	tellChildrenToClose chan Signal
 
 	// closed will be set to true when the pool is fully closed.
 	closed bool
@@ -113,9 +113,9 @@ type Pool[I, O any] struct {
 	// dependent (child) pool know that its closing, therefore the child should also shutdown.
 	connectorRequestedClosure bool
 
-	// childPoolLeft is a back-channel that is used by the child to tell the parent that the
+	// childsClosureSignal is a back-channel that is used by the child to tell the parent that the
 	// child left, therefore continuing parent's active closure request.
-	childPoolLeft <-chan Signal
+	childsClosureSignal <-chan Signal
 
 	// parent is a handle that the child can use to communicate with its parent.
 	parent PoolConnector[O]

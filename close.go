@@ -4,7 +4,7 @@ package komi
 // is getting closed. Use this for children to know when the
 // parent is leaving.
 func (p Pool[_, _]) signalForChildren() <-chan Signal {
-	return p.closureSignalForChildren
+	return p.tellChildrenToClose
 }
 
 // IsClosed returns true if the pool is closed, false otherwise.
@@ -15,7 +15,7 @@ func (p Pool[_, _]) IsClosed() bool {
 // anotherPoolIsSendingJobsHere return true if another pool is feeding
 // jobs into this pool, false otherwise.
 func (p Pool[_, _]) anotherPoolIsSendingJobsHere() bool {
-	return p.childPoolLeft != nil
+	return p.childsClosureSignal != nil
 }
 
 // Close will issue a pool closure request and takes a bool value, if true,
@@ -36,6 +36,7 @@ func (p *Pool[_, _]) Close(force ...bool) {
 	forced := len(force) > 0 && force[0]
 
 	if p.childsWait != nil && !forced {
+		p.log.Debug("Waiting for the child's Wait")
 		p.childsWait()
 	}
 
@@ -47,12 +48,11 @@ func (p *Pool[_, _]) Close(force ...bool) {
 		// Send the closed signal to any connected pools. We need to issue a closure
 		// request to the dependent (child) pools before locking ourselves (optionally)
 		// and waiting for those dependent (child) pools to leave.
-		p.closureSignalForChildren <- signal
-
-		p.log.Info("Waiting for child pools to close...")
-		<-p.childPoolLeft
+		p.log.Info("Sending a signal for the child to leave...")
+		p.tellChildrenToClose <- signal
+		<-p.childsClosureSignal
 		p.log.Info("Child left, resuming closure...")
-		close(p.closureSignalForChildren)
+		close(p.tellChildrenToClose)
 
 		shouldForceNonetheless = true
 		drain(p.inputs)
@@ -68,6 +68,7 @@ func (p *Pool[_, _]) Close(force ...bool) {
 	p.stopLaborers()
 
 	// Close the inputs channel so no new work is processed.
+	drain(p.inputs)
 	close(p.inputs)
 
 	// If we have been writing outputs, close the channel.
@@ -93,8 +94,10 @@ func (p *Pool[_, _]) Close(force ...bool) {
 
 	// Mark the flag that the pool is closed.
 	p.closed = true
-	p.closedSignal <- signal
 
 	// I like Internet Historian.
 	p.log.Debug("Pool is closed", "completed", p.JobsCompleted())
+
+	p.closedSignal <- signal
+	close(p.closedSignal)
 }

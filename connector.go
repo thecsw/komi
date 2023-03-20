@@ -112,7 +112,7 @@ func (p Pool[_, _]) IsConnected() bool {
 // waitBeforeClosure will force the pool to wait for a signal from this channel
 // before it can proceed with a closure request.
 func (p *Pool[_, _]) waitBeforeClosure(waitForThis <-chan Signal) {
-	p.childPoolLeft = waitForThis
+	p.childsClosureSignal = waitForThis
 }
 
 // Name returns the name of the pool.
