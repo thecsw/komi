@@ -16,7 +16,6 @@ func NewPool[I, O any](optionWork poolWork[I, O], options ...PoolSettingsFunc) *
 			numLaborers:            defaultNumLaborers,
 			size:                   defaultNumLaborers,
 			ratioSizeToNumLaborers: defaultRatio,
-			waitingDelay:           time.Millisecond,
 			name:                   defaultName,
 			// Show errors by default from logging.
 			logLevel: log.WarnLevel,
@@ -29,6 +28,8 @@ func NewPool[I, O any](optionWork poolWork[I, O], options ...PoolSettingsFunc) *
 			log.WithTimestamp(),
 			log.WithTimeFormat(time.DateTime),
 		),
+		currentlyWaitingForJobs:      &atomic.Bool{},
+		noJobsCurrentlyWaitingSignal: make(chan Signal),
 	}
 
 	// Run the function to set the work performer for the pool.

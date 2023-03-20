@@ -1,8 +1,6 @@
 package komi
 
 import (
-	"time"
-
 	"github.com/charmbracelet/log"
 )
 
@@ -24,10 +22,6 @@ type poolSettings struct {
 	// ratioSizeToNumLaborers is the ratio that is used (unless size is set manually)
 	// for setting the size to the number of laborers.
 	ratioSizeToNumLaborers int
-
-	// waitingDelay is how long the waiter waits for before checking for active jobs in
-	// `Wait()`.
-	waitingDelay time.Duration
 
 	// debug will set the logger to show all debug logs too.
 	debug bool
@@ -73,16 +67,6 @@ func WithSizeToLaborersRatio(ratio int) PoolSettingsFunc {
 			return
 		}
 		ps.ratioSizeToNumLaborers = ratio
-	}
-}
-
-// WithWaitingDelay sets the waiting delay in `Wait()` method.
-func WithWaitingDelay(delay time.Duration) PoolSettingsFunc {
-	return func(ps *poolSettings) {
-		if delay <= 0 {
-			return
-		}
-		ps.waitingDelay = delay
 	}
 }
 

@@ -2,7 +2,6 @@ package komi
 
 import (
 	"sync"
-	"time"
 )
 
 // Submit sends a job to the pool for processing.
@@ -98,10 +97,14 @@ func (p *Pool[_, _]) stopLaborers() {
 
 // Wait wil block until the pool has no waiting jobs, see `With...` options.
 func (p Pool[_, _]) Wait() {
-	p.log.Debug("Started to wait on jobs...", "count", p.JobsWaiting())
-	for p.JobsWaiting() > 0 {
-		time.Sleep(p.settings.waitingDelay)
+	p.currentlyWaitingForJobs.Store(true)
+	defer p.currentlyWaitingForJobs.Store(false)
+	// If no jobs waiting, leave immediately
+	if p.JobsWaiting() == 0 {
+		return
 	}
+	// Wait for the `performedWork` to send a signal
+	<-p.noJobsCurrentlyWaitingSignal
 }
 
 // JobsCompleted will return the number of jobs completed by the pool.

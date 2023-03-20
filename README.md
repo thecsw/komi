@@ -120,11 +120,9 @@ queued jobs and skip any waiting of the parent-most pool's queued jobs.
 
 ## Operations
 
-Pools support waiting (blocking) until the pool has no jobs waiting for completion with `pool.Wait()`,
-which will poll the number of waiting jobs with a delay set by `WithWaitingDelay(delay time.Duration)`
-(see below).
+Pools support waiting (blocking) until the pool has no jobs waiting for completion with `pool.Wait()`.
 
-Some other quality of life operations are provided,
+Some other quality of life operations are also provided,
 
 - `Submit(v)` will submit job `v` to be performed by the pool. 
 - `Close()` will close the pool if and only if it's disconnected or the parent-most pool.
@@ -144,7 +142,6 @@ You can tune the performance and behavior of the pool with some provided functio
 - `WithLaborers(num int)` sets the number of pool's laborers.
 - `WithSize(size int)` sets the size of the pool (how many jobs can wait until `pool.Submit` is blocked).
 - `WithSizeToLaborersRatio(ratio int)` sets the `ratio` in `size = ratio * number of laborers` equation.
-- `WithWaitingDelay(delay time.Duration)` sets the polling delay in `pool.Wait()`.
 - `WithLogLevel(level log.Level)` sets the pool's logging level to `level`.
 - `WithDebug()` sets the pool's logging level to `DebugLevel`.
 - `WithName(name string)` sets the pool's name as shown in logs.

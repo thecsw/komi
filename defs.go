@@ -122,6 +122,13 @@ type Pool[I, O any] struct {
 
 	// childsWait is dependent (child) pool's waiting function.
 	childsWait func()
+
+	// currentlyWaitingForJobs is set to true when `Wait` is active.
+	currentlyWaitingForJobs *atomic.Bool
+
+	// noJobsCurrentlyWaitingSignal fires when `Wait` is active and
+	// number of waiting jobs is 0.
+	noJobsCurrentlyWaitingSignal chan Signal
 }
 
 // PoolError is produced by the pool when a work performed by the pool fails

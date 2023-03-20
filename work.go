@@ -71,4 +71,10 @@ func (p *Pool[I, O]) performWorkWithErrors(job I) {
 func (p *Pool[_, _]) performedWork() {
 	p.jobsWaiting.Add(-1)
 	p.jobsCompleted.Add(1)
+
+	// If we are concurrently waiting for jobs, send a signal
+	// if the number of waiting jobs is 0.
+	if p.jobsWaiting.Load() < 1 && p.currentlyWaitingForJobs.Load() {
+		p.noJobsCurrentlyWaitingSignal <- signal
+	}
 }
