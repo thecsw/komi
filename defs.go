@@ -119,6 +119,9 @@ type Pool[I, O any] struct {
 
 	// parent is a handle that the child can use to communicate with its parent.
 	parent PoolConnector[O]
+
+	// childsWait is dependent (child) pool's waiting function.
+	childsWait func()
 }
 
 // PoolError is produced by the pool when a work performed by the pool fails

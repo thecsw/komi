@@ -18,6 +18,10 @@ type PoolConnector[O any] interface {
 	// a closure request.
 	waitBeforeClosure(<-chan Signal)
 
+	// setChildsWait is useful for parents gracefully waiting for
+	// their children to wrap up work.
+	setChildsWait(func())
+
 	// IsClosed returns true if the connected (parent) pool is closed,
 	// false otherwise.
 	IsClosed() bool
@@ -56,6 +60,9 @@ func (p *Pool[I, O]) Connect(parent PoolConnector[O]) {
 	// Tell the connected (parent) pool to wait for this dependent (child)
 	// pool's closure before they can close themselves.
 	p.parent.waitBeforeClosure(p.closedSignal)
+
+	// Set child's wait.
+	p.parent.setChildsWait(p.Wait)
 
 	// Kick off the connector.
 	go func(p *Pool[I, O]) {
@@ -111,4 +118,9 @@ func (p *Pool[_, _]) waitBeforeClosure(waitForThis <-chan Signal) {
 // Name returns the name of the pool.
 func (p *Pool[_, _]) Name() string {
 	return p.settings.name
+}
+
+// setChildsWait sets the child's wait function.
+func (p *Pool[_, _]) setChildsWait(childWait func()) {
+	p.childsWait = childWait
 }

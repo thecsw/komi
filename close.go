@@ -33,6 +33,12 @@ func (p *Pool[_, _]) Close(force ...bool) {
 		return
 	}
 
+	forced := len(force) > 0 && force[0]
+
+	if p.childsWait != nil && !forced {
+		p.childsWait()
+	}
+
 	// This is a flag that will force closure (override waiting).
 	shouldForceNonetheless := false
 
@@ -54,7 +60,7 @@ func (p *Pool[_, _]) Close(force ...bool) {
 	}
 
 	// If force flag has been passed, wait until no jobs are waiting.
-	if (len(force) <= 0 || !force[0]) && !shouldForceNonetheless {
+	if forced && !shouldForceNonetheless {
 		p.Wait()
 	}
 

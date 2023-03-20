@@ -114,22 +114,9 @@ as it should come from their connected (parent) pool.
 
 ## Quirks
 
-It may be due to my ignorance, but if you have `1->2->...->N-1->N` chain of pools set up and want
-to ensure that they all would go through all their work and get closed, you would have to manually
-wait for each pool and then close the parent-most pool.
-
-```go
-pool_1.Wait()
-pool_2.Wait()
-// more pools...
-pool_N_1.Wait()
-pool_N.Close()
-```
-
-This would make sure that all the work queued in `pool_1` will see its departure from `pool_N` 
-(unless they've been thrown out). Without doing this, there is an undefined behavior with a 
-race condition. There might be a way to fix it with smarter closing logic, but I can't seem
-to think of one. Thanks.
+When the parent-most pool is closing, it will wait for all the child pools to complete their jobs.
+This behavior can be overwritten by calling `.Close(true)`, which would skip any waiting of childrens'
+queued jobs and skip any waiting of the parent-most pool's queued jobs.
 
 ## Operations
 
