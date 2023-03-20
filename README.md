@@ -76,8 +76,10 @@ and the other counts the number of words, `countWords(contents string) int`.
 Two pools can be created,
 
 ```go
-opener := komi.NewPool(komi.WorkWithErrors(openFile), komi.WithLaborers(1))
-counter := komi.NewPool(komi.Work(countWords), komi.WithLaborers(10), komi.WithSize(20))
+opener := komi.NewPool(komi.WorkWithErrors(openFile), 
+    komi.WithLaborers(1), komi.WithName("Opener 📂"))
+counter := komi.NewPool(komi.Work(countWords), komi.WithLaborers(10), 
+    komi.WithSize(20), komi.WithName("Counter 📚"))
 ```
 
 We can wire the outputs of `opener` to be automatically fed into `counter` with
@@ -90,6 +92,7 @@ So now, those two pools are "connected". We would call this relationship as `ope
 the dependent (child) pool and `counter` being the connected (parent) pool.
 
 ```
+              Opener 📂                   Counter 📚
 filenames  ┌─────────────┐  contents   ┌──────────────┐  word counts
  ───────>  │  openFile   │  ────────>  │  countWords  │  ────────>
  .Submit   └─────────────┘  .Connect   └──────────────┘  .Outputs

@@ -1,9 +1,9 @@
 package komi
 
-// SignalForChildren will have a signal sent when this pool
+// signalForChildren will have a signal sent when this pool
 // is getting closed. Use this for children to know when the
 // parent is leaving.
-func (p Pool[_, _]) SignalForChildren() <-chan Signal {
+func (p Pool[_, _]) signalForChildren() <-chan Signal {
 	return p.closureSignalForChildren
 }
 

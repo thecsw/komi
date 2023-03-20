@@ -8,15 +8,15 @@ type PoolConnector[O any] interface {
 	// Submit will submit a job to the connected (parent) pool.
 	Submit(O)
 
-	// SignalForChildren will have a signal go through it when the
+	// signalForChildren will have a signal go through it when the
 	// connected (parent) pool is closing, therefore, letting know
 	// all the children pools that they should themselves close.
-	SignalForChildren() <-chan Signal
+	signalForChildren() <-chan Signal
 
-	// WaitBeforeClosure will force the connected (parent) pool to
+	// waitBeforeClosure will force the connected (parent) pool to
 	// wait for a signal from this channel before proceeding with
 	// a closure request.
-	WaitBeforeClosure(<-chan Signal)
+	waitBeforeClosure(<-chan Signal)
 
 	// IsClosed returns true if the connected (parent) pool is closed,
 	// false otherwise.
@@ -55,7 +55,7 @@ func (p *Pool[I, O]) Connect(parent PoolConnector[O]) {
 
 	// Tell the connected (parent) pool to wait for this dependent (child)
 	// pool's closure before they can close themselves.
-	p.parent.WaitBeforeClosure(p.closedSignal)
+	p.parent.waitBeforeClosure(p.closedSignal)
 
 	// Kick off the connector.
 	go func(p *Pool[I, O]) {
@@ -71,7 +71,7 @@ func (p *Pool[I, O]) Connect(parent PoolConnector[O]) {
 				// as done and kill the scope.
 				p.connectorsActive.Done()
 				return
-			case <-p.parent.SignalForChildren():
+			case <-p.parent.signalForChildren():
 				// If the target pool is closed, this pool should also get
 				// automatically closed, as no one would be continuing to
 				// consume this pool's outputs.
@@ -102,9 +102,9 @@ func (p Pool[_, _]) IsConnected() bool {
 	return p.parent != nil
 }
 
-// WaitBeforeClosure will force the pool to wait for a signal from this channel
+// waitBeforeClosure will force the pool to wait for a signal from this channel
 // before it can proceed with a closure request.
-func (p *Pool[_, _]) WaitBeforeClosure(waitForThis <-chan Signal) {
+func (p *Pool[_, _]) waitBeforeClosure(waitForThis <-chan Signal) {
 	p.childPoolLeft = waitForThis
 }
 
