@@ -140,6 +140,7 @@ Some other quality of life operations are also provided,
 - `IsClosed()` will return true if the pool has gracefully shutdown.
 - `JobsCompleted()` will return the number of jobs this pool has completed.
 - `JobsWaiting()` will return the number of jobs waiting in queue and currently in-work.
+- `JobsSucceeded()` will return the number of jobs completed with a non-nil errors.
 - `Name()` will return the pool's name (defaults to `Komi 🍡 `).
 
 ## Settings
