@@ -1,5 +1,13 @@
 # Komi - subarashi go pooling 🍡
 
+<div id='badges' align='center'>
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/thecsw/komi)](https://goreportcard.com/report/github.com/thecsw/komi)
+[![GoDoc](https://godoc.org/github.com/thecsw/komi?status.svg)](https://godoc.org/github.com/thecsw/komi)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+
+</div>
+
 ![komi](komi.jpg)
 
 ## Motivation
