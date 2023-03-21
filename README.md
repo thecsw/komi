@@ -92,7 +92,7 @@ opener := komi.NewWithSettings(komi.WorkWithErrors(openFile), &komi.Settings{
 })
 
 counter := komi.NewPool(komi.Work(countWords), &komi.Settings{
-	Name:     "Opener 📚 ",
+	Name:     "Counter 📚 ",
 	Laborers: 10,
 	Size:     20,
 })
