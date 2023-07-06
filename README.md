@@ -26,7 +26,7 @@ Setting up a pool and sending jobs is as trivial as
 pool := komi.New(komi.WorkSimple(foo))
 defer pool.Close()
 // other code...
-pool.Submit(v) // will block if pool is full
+err = pool.Submit(v) // will block if pool is full
 ```
 
 Notice that `pool.Close()` will gracefully free all the resources and channels occupied by
@@ -39,12 +39,14 @@ pool := komi.New(komi.Work(foo))
 defer pool.Close()
 // collect outputs with pool.Outputs() channel
 go func() {
-	for output := range pool.Outputs() {
+	// Errors omitted for brevity
+	outputs, _ := pool.Outputs()
+	for output := range outputs {
 		// output is the result of `foo(v)`
 	}
 }()
 // other code...
-pool.Submit(v) // will block if pool is full
+err = pool.Submit(v) // will block if pool is full
 ```
 
 But what if you want to collect errors as well? Consider `foo(v) error `
@@ -54,7 +56,7 @@ pool := komi.New(komi.WorkSimpleWithErrors(foo))
 defer pool.Close()
 // collect errors with with pool.Errors() channel...
 // other code...
-pool.Submit(v) // will block if pool is full
+err = pool.Submit(v) // will block if pool is full
 ```
 
 Or with `foo(v) (w, error)`!
@@ -65,7 +67,7 @@ defer pool.Close()
 // collect outputs with pool.Outputs() channel
 // collect errors with pool.Errors() channel...
 // other code...
-pool.Submit(v) // will block if pool is full
+err = pool.Submit(v) // will block if pool is full
 ```
 
 So, depending on what function you give, any work type is handled by the pool
