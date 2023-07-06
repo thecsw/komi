@@ -1,6 +1,7 @@
 package komi
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -32,20 +33,18 @@ type PoolConnector[O any] interface {
 	Name() string
 }
 
-func (p *Pool[I, O]) Connect(parent PoolConnector[O]) {
+func (p *Pool[I, O]) Connect(parent PoolConnector[O]) error {
 	// This should not trigger, because `noValue` is a package internal,
 	// so it shouldn't be accessible to the user to connect outputless
 	// pools to other pools. Consider this as a last defense line.
 	if !p.producesOutputs() {
-		p.log.Warn("Can't connect because not producing outputs.")
-		return
+		return errors.New("can't connect because not producing outputs")
 	}
 
 	// This pool is already sending its outputs to a connected (parent)
 	// pool, therefore, refuse this connection request.
 	if p.IsConnected() {
-		p.log.Warn("A connector is already running.")
-		return
+		return errors.New("a connector is already running")
 	}
 
 	// Create a wait group that will let us know if there are any
@@ -85,7 +84,7 @@ func (p *Pool[I, O]) Connect(parent PoolConnector[O]) {
 				// If the target pool is closed, this pool should also get
 				// automatically closed, as no one would be continuing to
 				// consume this pool's outputs.
-				p.log.Info("Closing because the parent pool is leaving...", "parent", p.parent.Name())
+				p.log.Debug("Closing because the parent pool is leaving...", "parent", p.parent.Name())
 
 				// Mark this flag, so the closure subroutine doesn't hang until
 				// this connector responds back, because it is the one, which
@@ -103,7 +102,9 @@ func (p *Pool[I, O]) Connect(parent PoolConnector[O]) {
 	p.connectorsActive.Add(1)
 
 	// Log the connected (parent) pool.
-	p.log.Info("Connected to the parent pool", "parent", p.parent.Name())
+	p.log.Debug("Connected to the parent pool", "parent", p.parent.Name())
+
+	return nil
 }
 
 // IsConnected will return true if this pool already has an active connector.
