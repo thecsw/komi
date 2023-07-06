@@ -9,7 +9,7 @@ import (
 // when connecting to them and by users to send pools around as well.
 type PoolConnector[O any] interface {
 	// Submit will submit a job to the connected (parent) pool.
-	Submit(O)
+	Submit(O) error
 
 	// signalForChildren will have a signal go through it when the
 	// connected (parent) pool is closing, therefore, letting know
